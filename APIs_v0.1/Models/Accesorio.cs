@@ -12,6 +12,8 @@ namespace APIs_v0._1.Models
 
         [BsonElement("Tipo")]
         public string Tipo { get; set; }
+        [BsonElement("Costo")]
+        public decimal Costo { get; set; }
         //posiblemente agregar un campo de precio
 
     }

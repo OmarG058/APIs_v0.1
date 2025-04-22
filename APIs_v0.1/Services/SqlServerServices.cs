@@ -20,7 +20,7 @@ namespace APIs_v0._1.Services
         {
             try
             {
-                var cliente = await context.Clientes.Where(c => c.Nombre == nombre && c.Apellidos == apellidos).FirstOrDefaultAsync();
+                var cliente = await context.Clientes.Where(c => c.Nombre.ToLower() == nombre.ToLower() && c.Apellidos.ToLower() == apellidos.ToLower()).FirstOrDefaultAsync();
                 return cliente;
             }
             catch (Exception ex)
