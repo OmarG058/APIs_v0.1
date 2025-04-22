@@ -14,27 +14,83 @@ namespace APIs_v0._1.Controllers
         {
             this.context = context;
         }
+
         [HttpGet]
         public async Task<ActionResult> GetClientes()
         {
-            var clientes = await context.Clientes.ToListAsync();
-            if (clientes != null)
+            try
             {
-                return Ok(clientes);
+                var clientes = await context.Clientes.ToListAsync();
+
+                if (clientes != null && clientes.Any())
+                {
+                    return Ok(clientes);
+                }
+                else
+                {
+                    return NotFound("No se encontraron clientes.");
+                }
             }
-            return StatusCode(500, "Ocurrió un error interno en el servidor.");
+            catch (Exception ex)
+            {
+                
+                return StatusCode(500, $"Ocurrió un error interno en el servidor: {ex.Message}");
+            }
         }
 
         [HttpGet("{id:int}", Name = "ObtenerCliente")]
         public async Task<ActionResult<Cliente>> GetClientesbyID([FromRoute] int id)
         {
-            var cliente = await context.Clientes.FirstOrDefaultAsync(x => x.IdCliente == id);
-            if (cliente == null)
+            try
             {
-                return NotFound($"No se han Encontrado Registros con el id:{id}");
-            }
-            return Ok(cliente);
+                var cliente = await context.Clientes.FirstOrDefaultAsync(x => x.IdCliente == id);
 
+                if (cliente == null)
+                {
+                    return NotFound($"No se han encontrado registros con el ID: {id}");
+                }
+
+                return Ok(cliente);
+            }
+            catch (Exception ex)
+            {
+                
+                return StatusCode(500, $"Ocurrió un error interno en el servidor: {ex.Message}");
+            }
+        }
+
+        [HttpGet("buscar", Name = "BuscarClientes")]
+        public async Task<ActionResult<IEnumerable<Cliente>>> BuscarClientes(
+            [FromQuery] string? nombre,
+            [FromQuery] string? apellidos)
+        {
+            try
+            {
+                var query = context.Clientes.AsQueryable();
+
+                if (!string.IsNullOrEmpty(nombre))
+                {
+                    query = query.Where(x => x.Nombre.ToLower().Contains(nombre.ToLower()));
+                }
+
+                if (!string.IsNullOrEmpty(apellidos))
+                {
+                    query = query.Where(x => x.Apellidos.ToLower().Contains(apellidos.ToLower()));
+                }
+
+                var clientes = await query.ToListAsync();
+
+                if (clientes == null || clientes.Count == 0)
+                {
+                    return NotFound("No se encontraron clientes con los criterios proporcionados.");
+                }
+
+                return Ok(clientes);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error interno al buscar clientes: {ex.Message}");
+            }
         }
 
         [HttpPost]
@@ -42,20 +98,33 @@ namespace APIs_v0._1.Controllers
         {
             try
             {
-                if (cliente != null)
+                if (!ModelState.IsValid)
                 {
-                    context.Add(cliente);
-                    await context.SaveChangesAsync();
-                    return CreatedAtRoute("ObtenerCliente", new { id = cliente.IdCliente });
+                    return BadRequest(ModelState);
                 }
-                else
+
+                // Validar formato de CURP (opcional pero recomendado)
+                if (!System.Text.RegularExpressions.Regex.IsMatch(cliente.Curp, @"^[A-Z]{4}\d{6}[A-Z]{6}\d{2}$"))
                 {
-                    return BadRequest("El cliente no puede ser nulo.");
+                    return BadRequest("CURP con formato inválido.");
                 }
+
+                // Verificar duplicados
+                var clienteExistente = await context.Clientes
+                    .AnyAsync(c => c.Curp == cliente.Curp || c.RFC == cliente.RFC);
+
+                if (clienteExistente)
+                {
+                    return Conflict("Ya existe un cliente con el mismo CURP o RFC.");
+                }
+
+                context.Add(cliente);
+                await context.SaveChangesAsync();
+
+                return CreatedAtRoute("ObtenerCliente", new { id = cliente.IdCliente }, cliente);
             }
             catch (Exception ex)
             {
-                // Aquí puedes loguear el error para obtener más información
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
@@ -63,26 +132,67 @@ namespace APIs_v0._1.Controllers
         [HttpPut("{id:int}")]
         public async Task<ActionResult<Cliente>> PutCliente([FromRoute] int id, Cliente cliente)
         {
-            if (cliente != null)
+            try
             {
-                context.Update(cliente);
+                if (id != cliente.IdCliente)
+                {
+                    return BadRequest("El ID proporcionado no coincide con el del cliente.");
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                var clienteExistente = await context.Clientes.FindAsync(id);
+                if (clienteExistente == null)
+                {
+                    return NotFound($"No se encontró un cliente con el ID: {id}");
+                }
+
+                // Actualizar campos específicos
+                clienteExistente.Nombre = cliente.Nombre;
+                clienteExistente.Apellidos = cliente.Apellidos;
+                clienteExistente.Telefono = cliente.Telefono;
+                clienteExistente.Curp = cliente.Curp;
+                clienteExistente.RFC = cliente.RFC;
+                clienteExistente.IdUsuario = cliente.IdUsuario;
+                clienteExistente.Colonia = cliente.Colonia;
+                clienteExistente.Calle = cliente.Calle;
+                clienteExistente.Ciudad = cliente.Ciudad;
+                clienteExistente.Estado = cliente.Estado;
+                clienteExistente.CodigoPostal = cliente.CodigoPostal;
+
                 await context.SaveChangesAsync();
-                return Ok(cliente + "Cleinte Actualizado");
+
+                return Ok("Cliente actualizado correctamente.");
             }
-            if (id != cliente.IdCliente)
+            catch (Exception ex)
             {
-                return NotFound($"El usuario con el {id} no exite");
+                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
             }
-            return BadRequest("Datos Invalidos");
         }
 
         [HttpDelete("{id:int}")]
-        public async Task<ActionResult<Cliente>> DeleteCliente([FromRoute] int id)
+        public async Task<ActionResult> DeleteCliente([FromRoute] int id)
         {
-            var registroBorrado = await context.Clientes.Where(x => x.IdCliente == id).ExecuteDeleteAsync();
-            if (registroBorrado == 0) { return NotFound($"El usuario con el {id} no exite"); };
-            return Ok();
+            try
+            {
+                var registroBorrado = await context.Clientes
+                    .Where(x => x.IdCliente == id)
+                    .ExecuteDeleteAsync();
 
+                if (registroBorrado == 0)
+                {
+                    return NotFound($"No se encontró un cliente con el ID: {id}");
+                }
+
+                return Ok($"Cliente con ID {id} eliminado correctamente.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+            }
         }
     }
 }
