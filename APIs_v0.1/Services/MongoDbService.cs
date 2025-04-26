@@ -17,12 +17,41 @@ namespace APIs_v0._1.Services
            _VentasCollection = database.GetCollection<Venta>(config["MongoSettings:CollectionName2"]);
         }
         //------------------------------------Autos---------------------------------
-        //obtener los autos por id
-        public async Task<List<Auto>> GetAutosById(string idAuto) => await _AutosCollection.Find(A => A.Id == idAuto).ToListAsync();
-        //obtener todos los autos 
-        public async Task<List<Auto>> GetAllAutos() => await _AutosCollection.Find(_ => true).ToListAsync();
-        //insertar en autos 
-        public async Task AgregarAuto(Auto Auto) => await _AutosCollection.InsertOneAsync(Auto);
+        //PARA MONGODB LA LISTA DE AUTOS
+        // Obtener todos los autos
+        public async Task<List<Auto>> GetAllAutos() =>
+            await _AutosCollection.Find(_ => true).ToListAsync();
+
+        // Obtener un auto por ID
+        public async Task<Auto> GetAutosById(string id) =>
+            await _AutosCollection.Find(A => A.Id == id).FirstOrDefaultAsync();
+
+        // Agregar un auto nuevo
+        public async Task AgregarAuto(Auto auto) =>
+            await _AutosCollection.InsertOneAsync(auto);
+
+        // Actualizar un auto
+        public async Task<bool> ActualizarAuto(string id, Auto auto)
+        {
+            var result = await _AutosCollection.ReplaceOneAsync(A => A.Id == id, auto);
+            return result.ModifiedCount > 0;
+        }
+
+        // Eliminar un auto
+        public async Task<bool> EliminarAuto(string id)
+        {
+            var result = await _AutosCollection.DeleteOneAsync(A => A.Id == id);
+            return result.DeletedCount > 0;
+        }
+
+        // Buscar autos por Modelo
+        public async Task<List<Auto>> GetAutosByModelo(string modelo) =>
+            await _AutosCollection.Find(auto => auto.Modelo.ToLower() == modelo.ToLower()).ToListAsync();
+
+        // Buscar autos por Fabricante
+        public async Task<List<Auto>> GetAutosByFabricante(string fabricante) =>
+            await _AutosCollection.Find(auto => auto.Fabricante.ToLower() == fabricante.ToLower()).ToListAsync();
+
 
         //---------------------------------Ventas---------------------------------
         public async Task<List<Venta>> GetVentas() => await _VentasCollection.Find(_ =>true).ToListAsync();

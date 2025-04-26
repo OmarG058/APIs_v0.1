@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
+
 namespace JO3Motors_API.Controllers
 {
     [ApiController]
@@ -104,7 +105,8 @@ namespace JO3Motors_API.Controllers
                     Cotizacion = cotizacion,
                     Cliente = cliente,
                     Seguro = seguro,
-                    Auto = auto.FirstOrDefault()
+                    Auto = auto //FirstOrDefault()
+                    //Quite el FirstOrDefault() porque GetAutosById ya lo tiene por id exacto, no es necesario el primero de la lista
                 };
 
                 return Ok(resultado);
