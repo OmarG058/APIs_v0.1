@@ -85,7 +85,7 @@ namespace APIs_v0._1.Controllers
                 usuario.FechaRegistro = DateTime.UtcNow;
             }
 
-            var tipoUsuarioValido = await context.TiposUsuarios.FirstOrDefaultAsync(t => t.IdTipoUsuario == usuario.IdTipo);
+            var tipoUsuarioValido = await context.TipoUsuario.FirstOrDefaultAsync(t => t.IdTipo == usuario.IdTipo);
 
             if (tipoUsuarioValido == null)
             {
@@ -133,7 +133,6 @@ namespace APIs_v0._1.Controllers
                     return BadRequest("El correo electrónico es inválido.");
                 }
 
-
                 // Si la contraseña ha sido proporcionada, la encriptamos
                 if (!string.IsNullOrEmpty(usuario.Contrasenia))
                 {
@@ -146,11 +145,19 @@ namespace APIs_v0._1.Controllers
                     return BadRequest("No se realizaron cambios en los datos proporcionados.");
                 }
 
-                // Actualizar el usuario
-                context.Update(usuario);
+                // Actualizar solo los campos modificados
+                if (!string.IsNullOrEmpty(usuario.Correo))
+                {
+                    usuarioExistente.Correo = usuario.Correo;
+                }
+
+                if (!string.IsNullOrEmpty(usuario.Contrasenia))
+                {
+                    usuarioExistente.Contrasenia = usuario.Contrasenia;
+                }
+
                 await context.SaveChangesAsync();
 
-                // Retornar la respuesta
                 return Ok("Usuario actualizado correctamente.");
             }
             catch (Exception ex)
@@ -167,7 +174,7 @@ namespace APIs_v0._1.Controllers
             {
                 return NotFound($"El usuario con el id:{id} no fue encontrado");
             }
-            return Ok();
+            return Ok("Usuario Eliminado Correctamente");
         }
     }
 }

@@ -11,6 +11,6 @@ namespace APIs_v0._1.Data
         public DbSet<Cliente> Clientes { get; set; }
         public DbSet<Seguro> Seguros { get; set; }
         public DbSet<Cotizacion> Cotizaciones { get; set; }
-        public DbSet<TipoUsuarios> TiposUsuarios { get; set; }
+        public DbSet<TipoUsuarios> TipoUsuario { get; set; }
     }
 }
