@@ -79,6 +79,7 @@ namespace APIs_v0._1.Services
             var filter = Builders<Venta>.Filter.Eq(v => v.Id, id);
             await _VentasCollection.ReplaceOneAsync(filter, venta);
         }
+        public async Task<DeleteResult> EliminarVenta(string id) => await _VentasCollection.DeleteOneAsync(V=>V.Id == id);
 
     }
 }

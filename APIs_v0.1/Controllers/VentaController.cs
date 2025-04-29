@@ -10,13 +10,13 @@ namespace APIs_v0._1.Controllers
 {
     [ApiController]
     [Route("api/Ventas")]
-    public class VentaController: ControllerBase
+    public class VentaController : ControllerBase
     {
         private readonly AppDbContext context;
         private readonly MongoDbService mongoServices;
         private readonly SqlServerServices sqlServices;
 
-        public VentaController(AppDbContext Context, MongoDbService MongoServices,SqlServerServices SqlServices)
+        public VentaController(AppDbContext Context, MongoDbService MongoServices, SqlServerServices SqlServices)
         {
             this.context = Context;
             this.mongoServices = MongoServices;
@@ -24,15 +24,15 @@ namespace APIs_v0._1.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> ObtenerVentas() 
+        public async Task<IActionResult> ObtenerVentas()
         {
             try
             {
                 var ventas = await mongoServices.GetVentas();
-               if(ventas != null)
-               {
+                if (ventas != null)
+                {
                     return Ok(ventas);
-               }
+                }
                 return NotFound("No se encontraron ventas.");
             }
             catch (Exception ex)
@@ -157,6 +157,25 @@ namespace APIs_v0._1.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteVenta([FromRoute] string id)
+        {
+            try
+            {
+                var resultado = await mongoServices.EliminarVenta(id);
+                if (resultado.DeletedCount == 0)
+                {
+                    return NotFound($"No se encontró una venta con el id: {id}");
+                }
+
+                return Ok($"Venta con id: {id} eliminada correctamente");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error interno: {ex.Message}");
             }
         }
     }
