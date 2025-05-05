@@ -8,11 +8,11 @@ namespace APIs_v0._1.Models
 
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string? Id { get; set; }
+        public string Id { get; set; }
 
 
         [BsonElement("Modelo")]
-        public string? Modelo { get; set; }
+        public string Modelo { get; set; }
 
         [BsonElement("FechaModelo")]
 
@@ -23,10 +23,10 @@ namespace APIs_v0._1.Models
 
 
         [BsonElement("Fabricante")]
-        public string? Fabricante { get; set; }
+        public string Fabricante { get; set; }
 
         [BsonElement("NumeroSerie")]
-        public string? NumeroSerie { get; set; }
+        public string NumeroSerie { get; set; }
 
         //[BsonElement("Accesorios")]
         //public List<Accesorio> Accesorios { get; set; } = new List<Accesorio>();

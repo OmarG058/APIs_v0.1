@@ -6,7 +6,7 @@ namespace APIs_v0._1.Models
     public class Cotizacion
     {
         [Key]
-        public int? IdCotizacion { get; set; }
+        public int IdCotizacion { get; set; }
         [Required]
         public DateTime Fecha { get; set; }
         

@@ -4,20 +4,22 @@ namespace APIs_v0._1.Models
 {
     public class VentaSeguro
     {
-        [BsonElement("Contratado")]
-        public bool Contratado { get; set; }
+        [BsonElement("Estado")]
+        public string Estado { get; set; }
 
-        [BsonElement("TipoSeguro")]     
-        public string? TipoSeguro { get; set; }
+        [BsonElement("FechaContratacion")]
+        public DateTime FechaContratacion { get; set; }
 
+        [BsonElement("FechaFinalizacion")]
+        public DateTime FechaFinalizacion { get; set; }
+
+ 
         [BsonElement("PrecioTotal")]
-        public decimal? PrecioTotal { get; set; }
+        public decimal PrecioTotal { get; set; }
 
         [BsonElement("SaldoPendiente")]
-        public decimal? SaldoPendiente { get; set; }
+        public decimal SaldoPendiente { get; set; }
 
-        [BsonElement("TipoPago")]
-        public string? TipoPago { get; set; }
 
         [BsonElement("PagosSeguro")]
         public List<Pago>? PagosSeguro { get; set; } = new List<Pago>();

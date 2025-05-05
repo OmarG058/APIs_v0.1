@@ -2,8 +2,10 @@
 using APIs_v0._1.Helper;
 using APIs_v0._1.Models;
 using APIs_v0._1.Services;
+using JO3Motors_API.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
+using System.Runtime.InteropServices;
 
 
 namespace APIs_v0._1.Controllers
@@ -48,7 +50,7 @@ namespace APIs_v0._1.Controllers
         {
             try
             {
-                var venta = await mongoServices.GetVentasById(id);
+                var venta = await mongoServices.GetVentaById(id);
                 if (venta != null)
                     return Ok(venta);
                 return NotFound($"No se encontró la venta con el ID: {id}.");
@@ -103,35 +105,195 @@ namespace APIs_v0._1.Controllers
             {
                 return StatusCode(500, $"Error interno del servidor: {ex.Message}");
             }
-        }  
+        }
 
-        [HttpPost]
-        public async Task<IActionResult> PostVenta([FromBody] Venta venta)
+        //Agregar una venta en base a la cotización
+        [HttpPost("nuevo")]
+        public async Task<IActionResult> CrearVenta([FromBody] CrearVentaRequest request)
         {
-            try
-            {
-                if (venta == null)
-                {
-                    return BadRequest("La venta no puede ser nula.");
-                }  
+            // Obtener cotización
+            var cotizacion = await sqlServices.GetCotizacionById(request.IdCotizacion);
+            if (cotizacion == null)
+                return NotFound("Cotización no encontrada.");
 
-                // Validación si no contrató seguro
-                if (venta.VentaSeguro != null && !venta.VentaSeguro.Contratado)
-                {
-                    venta.VentaSeguro.TipoSeguro = null;
-                    venta.VentaSeguro.TipoPago = null;
-                    venta.VentaSeguro.PrecioTotal = 0;
-                    venta.VentaSeguro.SaldoPendiente = 0;
-                    venta.VentaSeguro.PagosSeguro = new List<Pago>();
-                }
+            // Obtener auto (de MongoDB)
+            var auto = await mongoServices.GetAutosById(cotizacion.IdAuto);
+            if (auto == null)
+                return NotFound("Auto no encontrado.");
 
-                await mongoServices.AgregarVenta(venta);
-                return CreatedAtRoute(("ObtenerVentaPorId"), new { id = venta.Id }, venta);
-            }
-            catch (Exception ex)
+            // Calcular costos de accesorios si hay
+
+            // Calcular total
+            var costoTotal = await sqlServices.GetCostoTotalById(cotizacion.IdCotizacion);
+
+            // Armar VentaAuto
+            var ventaAuto = new VentaAuto
             {
-                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+                PrecioTotal = (decimal)costoTotal,
+                TipoPago = cotizacion.TipoPago,
+                SaldoPendiente = (decimal)costoTotal,
+                PagosAuto = new List<Pago>()
+            };
+
+            // Armar VentaSeguro
+            VentaSeguro ventaSeguro = new VentaSeguro
+            {
+
+            };
+
+            if (cotizacion.IdSeguro.HasValue)
+            {
+                var seguro = await sqlServices.GetSeguroById(cotizacion.IdSeguro.Value);
+                if (seguro == null)
+                    return NotFound("Seguro no encontrado.");
+
+                var fechaInicio = DateTime.UtcNow;
+
+                ventaSeguro = new VentaSeguro
+                {
+
+                    Estado = "Activo",
+                    PrecioTotal = seguro.Costo,
+                    SaldoPendiente = 0,
+                    FechaContratacion = fechaInicio,
+                    FechaFinalizacion = fechaInicio.AddMonths(seguro.Duracion),
+                    PagosSeguro = new List<Pago>() // Lista vacía, pagos se registran aparte
+                };
             }
+            if (cotizacion.IdSeguro is null)
+            {
+                var fecha = DateTime.UtcNow;
+
+
+
+                ventaSeguro = new VentaSeguro
+                {
+
+                    Estado = "Desactivado",
+                    FechaContratacion = fecha,
+                    FechaFinalizacion = fecha,
+                    PagosSeguro = new List<Pago>()
+                };
+            }
+
+            // Crear venta
+            var venta = new Venta
+            {
+                IdCotizacion = cotizacion.IdCotizacion,
+                IdAuto = cotizacion.IdAuto,
+                IdCliente = cotizacion.IdCliente,
+                IdSeguro = (int?)cotizacion.IdSeguro,
+                Fecha = DateTime.UtcNow,
+                VentaAuto = ventaAuto,
+                VentaSeguro = ventaSeguro
+            };
+
+            await mongoServices.AgregarVenta(venta);
+
+            return Ok("Venta creada correctamente.");
+        }
+
+
+        //Agregar un pago a la venta
+        [HttpPost("/pago-auto")]
+        public async Task<IActionResult> AgregarPagoAuto([FromBody] AgregarPagoAutoRequest request)
+        {
+            // Obtener la venta
+            var venta = await mongoServices.GetVentaById(request.IdVenta);
+            if (venta == null)
+                return NotFound("Venta no encontrada.");
+
+            // Crear el nuevo pago
+            var nuevoPago = new Pago
+            {
+                Fecha = DateTime.UtcNow,
+                Monto = request.Monto,
+                Metodo = request.Metodo
+            };
+
+            // Agregar el pago y actualizar el saldo
+            venta.VentaAuto.PagosAuto.Add(nuevoPago);
+            venta.VentaAuto.SaldoPendiente -= request.Monto;
+
+
+            if (venta.VentaAuto.SaldoPendiente < 0)
+                venta.VentaAuto.SaldoPendiente = 0; // Protección contra valores negativos
+
+            // Guardar cambios
+            await mongoServices.ActualizarVenta(request.IdVenta, venta);
+
+            return Ok("Pago registrado correctamente.");
+        }
+
+        [HttpPost("reactivar-seguro")]
+        public async Task<IActionResult> ReactivarSeguro([FromBody] ActivarSeguroRequest request)
+        {
+            var venta = await mongoServices.GetVentaById(request.IdVenta);
+            if (venta == null)
+                return NotFound("Venta no encontrada.");
+
+            var seguro = await sqlServices.GetSeguroById(request.IdSeguro);
+            if (seguro == null)
+                return NotFound("Nuevo seguro no encontrado.");
+
+            var fechaInicio = DateTime.UtcNow;
+
+            var nuevoVentaSeguro = new VentaSeguro
+            {
+                Estado = "Activo",
+                FechaContratacion = fechaInicio,
+                FechaFinalizacion = fechaInicio.AddMonths(seguro.Duracion),
+                PrecioTotal = seguro.Costo,
+                SaldoPendiente = seguro.Costo - request.Monto,
+                PagosSeguro = new List<Pago>
+        {
+            new Pago
+            {
+                Fecha = fechaInicio,
+                Metodo = request.MetodoPago,
+                Monto = request.Monto
+            }
+        }
+            };
+
+            // Actualizar el ID del seguro en la venta
+            venta.IdSeguro = request.IdSeguro;
+            venta.VentaSeguro = nuevoVentaSeguro;
+
+            await mongoServices.ActualizarVenta(venta.Id, venta);
+
+            return Ok("Seguro reactivado correctamente con nuevo seguro.");
+        }
+
+        //Agregar un pago al seguro
+        [HttpPost("{id}/pago-seguro")]
+        public async Task<IActionResult> AgregarPagoSeguro(string id, [FromBody] PagoRequestSeguro request)
+        {
+            var venta = await mongoServices.GetVentaById(id);
+            if (venta == null)
+                return NotFound("Venta no encontrada.");
+
+            if (venta.VentaSeguro.Estado != "Activo")
+                return BadRequest("El seguro no está activo.");
+
+            var nuevoPago = new Pago
+            {
+                Fecha = DateTime.UtcNow,
+                Metodo = request.Metodo,
+                Monto = request.Monto
+            };
+
+            venta.VentaSeguro.PagosSeguro.Add(nuevoPago);
+            venta.VentaSeguro.SaldoPendiente -= request.Monto;
+
+            if (venta.VentaSeguro.SaldoPendiente <= 0)
+            {
+                venta.VentaSeguro.SaldoPendiente = 0;
+                // opcional: podrías marcarlo como "Pagado" si lo deseas
+            }
+
+            await mongoServices.ActualizarVenta(id, venta);
+            return Ok("Pago al seguro registrado correctamente.");
         }
 
         [HttpPut("{id}")]
@@ -139,7 +301,7 @@ namespace APIs_v0._1.Controllers
         {
             try
             {
-                var ventaExistente = await mongoServices.GetVentasById(id);
+                var ventaExistente = await mongoServices.GetVentaById(id);
                 if (ventaExistente == null)
                 {
                     return NotFound($"No se encontró ninguna venta con el ID: {id}.");

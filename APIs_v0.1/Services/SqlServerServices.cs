@@ -3,6 +3,7 @@ using APIs_v0._1.Models;
 using MongoDB.Driver;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using JO3Motors_API.Models;
 
 namespace APIs_v0._1.Services
 {
@@ -27,6 +28,27 @@ namespace APIs_v0._1.Services
             {
                 throw new Exception("Error al obtener el cliente por nombre", ex);
             }
-        }       
+        }
+
+        //cotizaciones
+        public async Task<Cotizacion?> GetCotizacionById(int id)
+        {
+            return await context.Cotizaciones
+                .FirstOrDefaultAsync(c => c.IdCotizacion == id);
+        }
+
+        public async Task<decimal?> GetCostoTotalById(int id)
+        {
+            return await context.Cotizaciones
+                .Where(c => c.IdCotizacion == id)
+                .Select(c => c.CostoTotal)
+                .FirstOrDefaultAsync();
+        }
+        //seguros
+        public async Task<Seguro?> GetSeguroById(int id)
+        {
+            return await context.Seguros
+                .FirstOrDefaultAsync(s => s.IdSeguro == id);
+        }
     }
 }

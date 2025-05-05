@@ -58,7 +58,10 @@ namespace APIs_v0._1.Services
 
         //---------------------------------Ventas---------------------------------
         public async Task<List<Venta>> GetVentas() => await _VentasCollection.Find(_ =>true).ToListAsync();
-        public async Task<List<Venta>> GetVentasById (string id) => await _VentasCollection.Find(v => v.Id == id).ToListAsync();
+        public async Task<Venta?> GetVentaById(string id)
+        {
+            return await _VentasCollection.Find(v => v.Id == id).FirstOrDefaultAsync();
+        }
         public async Task<List<Venta>> GetVentasByCliente(int? idCliente) => await _VentasCollection.Find(v => v.IdCliente == idCliente).ToListAsync();
         public async Task<List<Venta>> GetVentasByFecha(DateTime fecha)
         {
@@ -77,7 +80,7 @@ namespace APIs_v0._1.Services
             return ventas;
         }
         public async Task AgregarVenta(Venta venta) => await _VentasCollection.InsertOneAsync(venta);
-        public async Task ActualizarVenta(string id, Venta venta)
+        public async Task ActualizarVenta(string id,Venta venta)
         {
             var filter = Builders<Venta>.Filter.Eq(v => v.Id, id);
             await _VentasCollection.ReplaceOneAsync(filter, venta);

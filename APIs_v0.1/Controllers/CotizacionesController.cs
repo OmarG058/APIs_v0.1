@@ -35,7 +35,7 @@ namespace JO3Motors_API.Controllers
 
                 // Obtener precio del seguro
                 decimal costoSeguro = 0;
-                if (cotizacion.IdSeguro.HasValue)
+                if (cotizacion.IdSeguro.HasValue && cotizacion.IdSeguro.Value != 0) //El si no selecciona seguro se guarda como 0 el cual biene del front
                 {
                     var seguro = await _context.Seguros.FindAsync(cotizacion.IdSeguro.Value);
                     if (seguro == null)
@@ -47,6 +47,7 @@ namespace JO3Motors_API.Controllers
                 var auto = await _mongoService.GetAutosById(cotizacion.IdAuto);
                 if (auto == null)
                     return BadRequest("Auto no encontrado.");
+
 
                 // Obtener accesorios si se proporcionaron
                 var accesorioIds = new List<string>();
@@ -85,6 +86,7 @@ namespace JO3Motors_API.Controllers
                 {
                     cotizacion.PlazoMeses = 0;
                     cotizacion.Mensualidad = 0;
+                    cotizacion.IdSeguro = null;
                 }
 
                 cotizacion.CostoTotal = costoTotal;
@@ -234,6 +236,7 @@ namespace JO3Motors_API.Controllers
                 {
                     cotizacion.PlazoMeses = 0;
                     cotizacion.Mensualidad = 0;
+                    cotizacion.IdSeguro = null;
                 }
 
                 // Actualizar campos

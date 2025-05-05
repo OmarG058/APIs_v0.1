@@ -8,17 +8,24 @@ namespace APIs_v0._1.Models
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
-        [BsonElement("IdAuto")]
-        public string IdAuto { get; set; }
 
-        [BsonElement("IdUsuario")]
-        [BsonRequired]
-        public int IdUsuario { get; set; }
+        [BsonElement("IdCotizacion")]
+        public int IdCotizacion { get; set; }
+
+        [BsonElement("IdAuto")]
+        public string IdAuto { get; set; }   
+        
         [BsonElement("IdCliente")]
         [BsonRequired]
         public  int IdCliente { get; set; }
+
+        [BsonElement("IdSeguro")]
+        [BsonRequired]
+        public int? IdSeguro { get; set; }
+
         [BsonElement("Fecha")]
         public DateTime Fecha { get; set; }
+
         [BsonElement("VentaAuto")]
         public VentaAuto VentaAuto { get; set; }
 
