@@ -28,7 +28,7 @@ namespace APIs_v0._1.Models
         [BsonElement("NumeroSerie")]
         public string? NumeroSerie { get; set; }
 
-        [BsonElement("Accesorios")]
-        public List<Accesorio> Accesorios { get; set; } = new List<Accesorio>();
+        //[BsonElement("Accesorios")]
+        //public List<Accesorio> Accesorios { get; set; } = new List<Accesorio>();
     }
 }

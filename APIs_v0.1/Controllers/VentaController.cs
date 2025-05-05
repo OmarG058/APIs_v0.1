@@ -103,7 +103,7 @@ namespace APIs_v0._1.Controllers
             {
                 return StatusCode(500, $"Error interno del servidor: {ex.Message}");
             }
-        }
+        }  
 
         [HttpPost]
         public async Task<IActionResult> PostVenta([FromBody] Venta venta)
@@ -113,7 +113,7 @@ namespace APIs_v0._1.Controllers
                 if (venta == null)
                 {
                     return BadRequest("La venta no puede ser nula.");
-                }
+                }  
 
                 // Validación si no contrató seguro
                 if (venta.VentaSeguro != null && !venta.VentaSeguro.Contratado)

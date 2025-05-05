@@ -7,6 +7,7 @@ namespace APIs_v0._1.Services
     {
         private readonly IMongoCollection<Auto> _AutosCollection;
         private IMongoCollection <Venta> _VentasCollection;
+        private IMongoCollection<Accesorio> _AccesoriosCollection;
 
         // private readonly IMongoCollection<Ventas> _VentasCollection;
         public MongoDbService(IConfiguration config)
@@ -15,6 +16,8 @@ namespace APIs_v0._1.Services
             var database = client.GetDatabase(config["MongoSettings:DatabaseName"]);
             _AutosCollection = database.GetCollection<Auto>(config["MongoSettings:CollectionName"]);
            _VentasCollection = database.GetCollection<Venta>(config["MongoSettings:CollectionName2"]);
+           _AccesoriosCollection = database.GetCollection<Accesorio>(config["MongoSettings:CollectionName3"]);
+
         }
         //------------------------------------Autos---------------------------------
         //PARA MONGODB LA LISTA DE AUTOS
@@ -80,6 +83,13 @@ namespace APIs_v0._1.Services
             await _VentasCollection.ReplaceOneAsync(filter, venta);
         }
         public async Task<DeleteResult> EliminarVenta(string id) => await _VentasCollection.DeleteOneAsync(V=>V.Id == id);
+
+        //Accesorios
+        public async Task<List<Accesorio>> GetAccesoriosByIds(List<string> ids)
+        {
+            var filter = Builders<Accesorio>.Filter.In(a => a.IdAccesorio, ids);
+            return await _AccesoriosCollection.Find(filter).ToListAsync();
+        }
 
     }
 }
