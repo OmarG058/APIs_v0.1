@@ -296,6 +296,31 @@ namespace APIs_v0._1.Controllers
             return Ok("Pago al seguro registrado correctamente.");
         }
 
+        //Deactivar seguro 
+        [HttpPost("{id}/desactivar-seguro")]
+        public async Task<IActionResult> DesactivarSeguro([FromRoute] string id )
+        {
+            var venta = await mongoServices.GetVentaById(id);
+            if (venta == null)
+                return NotFound("Venta no encontrada.");
+
+            var seguro = venta.VentaSeguro;
+
+            if (seguro.Estado != "Activo")
+                return BadRequest("El seguro ya está desactivado.");
+
+            if (seguro.FechaFinalizacion > DateTime.UtcNow)
+                return BadRequest("El seguro aún está vigente. No se puede desactivar antes de la fecha de finalización.");
+
+            seguro.Estado = "Desactivado";
+            // Marcar la desactivación con la fecha actual
+            seguro.FechaFinalizacion = DateTime.UtcNow;
+
+            await mongoServices.ActualizarVenta(venta.Id, venta);
+
+            return Ok("Seguro desactivado correctamente.");
+        }
+
         [HttpPut("{id}")]
         public async Task<IActionResult> PutVenta([FromRoute] string id, [FromBody] Venta venta)
         {
