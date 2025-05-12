@@ -40,12 +40,12 @@ namespace APIs_v0._1.Controllers
             if (user.IdTipo == 1)
             {
                 var clientes =  context.Usuarios.Where(u => u.IdTipo.ToString() == "2").ToList();
-                return Ok(new { token, tipo = user.IdTipo, clientes });
+                return Ok(new { token, tipo = user.IdTipo, clientes,  user.IdUsuario });
             }
             if (user.IdTipo == 2)
             {
                 var Autos = await mongoServices.GetAllAutos();
-                return Ok(new { token, tipo = user.IdTipo, Autos });
+                return Ok(new { token, tipo = user.IdTipo, Autos , user.IdUsuario });
             }
 
 

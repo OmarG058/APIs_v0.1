@@ -93,6 +93,29 @@ namespace APIs_v0._1.Controllers
             }
         }
 
+        //cliente por id de usuario
+        [HttpGet ("/Cliente/usuario/{id}")]
+        public async Task<ActionResult<Cliente>> GetClientesbyIDUsuario([FromRoute] int id)
+        {
+            try
+            {
+                var cliente = await context.Clientes.FirstOrDefaultAsync(x => x.IdUsuario == id);
+
+                if (cliente == null)
+                {
+                    return NotFound($"No se han encontrado registros con el ID de usuario: {id}");
+                }
+
+                return Ok(cliente);
+            }
+            catch (Exception ex)
+            {
+                
+                return StatusCode(500, $"Ocurrió un error interno en el servidor: {ex.Message}");
+            }
+        }
+
+
         [HttpPost]
         public async Task<ActionResult<Cliente>> PostCliente(Cliente cliente)
         {
